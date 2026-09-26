@@ -17,13 +17,18 @@
       "basalt",
       "chalk",
       "diorite",
-      "emery"
+      "emery",
+      "flint",
+      "gabbro"
     ],
     "watchapp": {
       "watchface": true
     },
     "capabilities": [
       "configurable"
+    ],
+    "usesPermissions": [
+      "Calendar"
     ],
     "messageKeys": [
       "EVENT_1_TITLE",

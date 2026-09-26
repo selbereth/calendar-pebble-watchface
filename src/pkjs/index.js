@@ -1,37 +1,36 @@
-var icsParser = require('./ics-parser');
+// Reads the next 3 upcoming events from the Pebble app's built-in Calendar plugin
+// (calendar/event) and pushes them to the watch. This is the phone's own calendar
+// sync (whatever calendars are enabled in the Pebble app's Calendar screen) --
+// no ICS URL or companion app needed.
+//
+// Requires the mobile app's experimental plugin API (v1.14.0+): Settings > Debug >
+// Show debug options > "Use experimental plugins".
 
-var LOOKAHEAD_DAYS = 30;
-var REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 var MAX_EVENTS = 3;
-
-function getIcsUrl() {
-  try {
-    return localStorage.getItem('icsUrl') || '';
-  } catch (e) {
-    return '';
-  }
-}
-
-function setIcsUrl(url) {
-  try {
-    localStorage.setItem('icsUrl', url);
-  } catch (e) {
-    // ignore storage errors
-  }
-}
+var subscription = null;
 
 function pad(n) {
   return n < 10 ? '0' + n : '' + n;
 }
 
-function formatEventTime(date, now) {
+function formatEventTime(instance) {
+  var startsAt = instance.properties.starts_at || {};
+  var allDay = instance.properties.all_day &&
+    instance.properties.all_day.boolean && instance.properties.all_day.boolean.value;
+
+  if (allDay) {
+    return 'All day';
+  }
+  if (!startsAt.timestamp) {
+    return (startsAt.shortText && startsAt.shortText.text) || '';
+  }
+
+  var date = new Date(startsAt.timestamp.value * 1000);
+  var now = new Date();
   var sameDay = date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate();
-
-  var hours = date.getHours();
-  var minutes = pad(date.getMinutes());
-  var timeStr = pad(hours) + ':' + minutes;
+  var timeStr = pad(date.getHours()) + ':' + pad(date.getMinutes());
 
   if (sameDay) {
     return timeStr;
@@ -41,110 +40,82 @@ function formatEventTime(date, now) {
   return days[date.getDay()] + ' ' + timeStr;
 }
 
-function sendEvents(events, now) {
+function nameOf(instance) {
+  var name = instance.properties.name;
+  return (name && (name.shortText || name.longText) &&
+    (name.shortText ? name.shortText.text : name.longText.text)) || '';
+}
+
+function sendEvents(instances) {
   var dict = {};
 
-  if (events.length === 0) {
-    dict['EVENT_1_TITLE'] = 'No upcoming events';
-    dict['EVENT_1_TIME'] = '';
-    dict['EVENT_2_TITLE'] = '';
-    dict['EVENT_2_TIME'] = '';
-    dict['EVENT_3_TITLE'] = '';
-    dict['EVENT_3_TIME'] = '';
+  if (!instances || instances.length === 0) {
+    dict.EVENT_1_TITLE = 'No upcoming events';
+    dict.EVENT_1_TIME = '';
+    dict.EVENT_2_TITLE = '';
+    dict.EVENT_2_TIME = '';
+    dict.EVENT_3_TITLE = '';
+    dict.EVENT_3_TIME = '';
   } else {
     for (var i = 0; i < MAX_EVENTS; i++) {
-      var evt = events[i];
-      dict['EVENT_' + (i + 1) + '_TITLE'] = evt ? evt.title : '';
-      dict['EVENT_' + (i + 1) + '_TIME'] = evt ? formatEventTime(evt.start, now) : '';
+      var instance = instances[i];
+      dict['EVENT_' + (i + 1) + '_TITLE'] = instance ? nameOf(instance) : '';
+      dict['EVENT_' + (i + 1) + '_TIME'] = instance ? formatEventTime(instance) : '';
     }
   }
 
-  Pebble.sendAppMessage(dict, function () {
-    console.log('Calendar: events sent to watch');
-  }, function (e) {
-    console.log('Calendar: failed to send events: ' + JSON.stringify(e));
+  Pebble.sendAppMessage(dict, function () {}, function (e) {
+    console.log('Calendar: sendAppMessage failed: ' + JSON.stringify(e));
   });
 }
 
-function fetchAndSend() {
-  var icsUrl = getIcsUrl();
-  var now = new Date();
-
-  if (!icsUrl) {
-    sendEvents([], now);
-    return;
+function subscribe() {
+  if (subscription) {
+    subscription.unsubscribe();
   }
-
-  var horizonEnd = new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
-
-  xhrRequest(icsUrl, 'GET', function (responseText) {
-    var events;
-    try {
-      events = icsParser.parseICS(responseText, now, horizonEnd);
-    } catch (e) {
-      console.log('Calendar: failed to parse ICS feed: ' + e);
-      events = [];
-    }
-    sendEvents(events.slice(0, MAX_EVENTS), now);
-  }, function (error) {
-    console.log('Calendar: failed to fetch ICS feed: ' + error);
-    sendEvents([], now);
+  subscription = Pebble.subscribeToSource({
+    category: 'calendar',
+    item: 'event',
+    properties: ['name', 'starts_at', 'all_day'],
+    onData: function (envelope) {
+      sendEvents(envelope.instances.slice(0, MAX_EVENTS));
+    },
+    onError: function (err) {
+      console.log('Calendar: calendar/event error: ' + err.code);
+      if (err.code === 'PERMISSION_DENIED') {
+        sendEvents([{
+          properties: { name: { shortText: { text: 'Calendar permission needed' } } },
+        }]);
+      } else {
+        sendEvents([]);
+      }
+    },
   });
 }
 
-function xhrRequest(url, type, onSuccess, onError) {
-  var xhr = new XMLHttpRequest();
-  xhr.onload = function () {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      onSuccess(xhr.responseText);
-    } else {
-      onError('HTTP ' + xhr.status);
-    }
-  };
-  xhr.onerror = function () {
-    onError('network error');
-  };
-  xhr.open(type, url);
-  xhr.send();
-}
-
-function buildConfigHtml() {
-  var currentUrl = getIcsUrl();
-  return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">' +
-    '<title>Calendar Watchface Settings</title>' +
-    '<style>body{font-family:sans-serif;padding:16px;}label{display:block;margin-bottom:8px;font-weight:bold;}' +
-    'input{width:100%;padding:8px;font-size:16px;box-sizing:border-box;}' +
-    'button{margin-top:16px;padding:10px 16px;font-size:16px;}' +
-    'p{color:#555;font-size:13px;}</style></head><body>' +
-    '<label for="icsUrl">Calendar feed (.ics) URL</label>' +
-    '<input type="text" id="icsUrl" value="' + currentUrl.replace(/"/g, '&quot;') + '" placeholder="https://.../basic.ics">' +
-    '<p>Use the secret iCal (.ics) address from your calendar provider (e.g. Google Calendar &rarr; Settings &rarr; ' +
-    'Integrate calendar &rarr; Secret address in iCal format).</p>' +
-    '<button onclick="save()">Save</button>' +
-    '<script>function save(){var url=document.getElementById("icsUrl").value;' +
-    'document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify({icsUrl:url}));}</script>' +
+function configPage() {
+  return '<!doctype html><html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<title>Calendar Watchface</title>' +
+    '<style>:root{color-scheme:light dark}' +
+    'body{font:16px system-ui,-apple-system,sans-serif;margin:0;padding:20px;line-height:1.4}' +
+    'h1{font-size:20px}ol{padding-left:20px}li{margin-bottom:10px}</style></head><body>' +
+    '<h1>Calendar Watchface</h1>' +
+    '<p>Shows your next 3 upcoming events, read from the Pebble app’s own calendar sync.</p>' +
+    '<ol>' +
+    '<li>In the Pebble app: <b>Settings &rarr; Debug &rarr; Show debug options</b>, then enable ' +
+    '<b>Use experimental plugins</b> (this feature is still experimental).</li>' +
+    '<li>Make sure your calendars are synced and enabled in the Pebble app’s <b>Calendar</b> ' +
+    'screen.</li>' +
+    '</ol>' +
+    '<p>No further setup needed here — close this page.</p>' +
     '</body></html>';
 }
 
-Pebble.addEventListener('ready', function () {
-  console.log('Calendar: PebbleKit JS ready');
-  fetchAndSend();
-  setInterval(fetchAndSend, REFRESH_INTERVAL_MS);
-});
-
 Pebble.addEventListener('showConfiguration', function () {
-  Pebble.openURL('data:text/html,' + encodeURIComponent(buildConfigHtml()));
+  Pebble.openURL('data:text/html;charset=utf-8,' + encodeURIComponent(configPage()));
 });
 
-Pebble.addEventListener('webviewclosed', function (e) {
-  if (!e || !e.response) {
-    return;
-  }
-  try {
-    var settings = JSON.parse(decodeURIComponent(e.response));
-    setIcsUrl(settings.icsUrl || '');
-    fetchAndSend();
-  } catch (err) {
-    console.log('Calendar: failed to parse configuration response: ' + err);
-  }
+Pebble.addEventListener('ready', function () {
+  subscribe();
 });
