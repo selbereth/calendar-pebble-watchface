@@ -1,0 +1,40 @@
+{
+  "name": "calendar-pebble-watchface",
+  "author": "samuelt12",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Calendar",
+    "uuid": "1f7f7c53-f504-4653-960f-910447e3d532",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": [
+      "configurable"
+    ],
+    "messageKeys": [
+      "EVENT_1_TITLE",
+      "EVENT_1_TIME",
+      "EVENT_2_TITLE",
+      "EVENT_2_TIME",
+      "EVENT_3_TITLE",
+      "EVENT_3_TIME"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
