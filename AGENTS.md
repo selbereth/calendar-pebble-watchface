@@ -88,6 +88,21 @@ pebble install --phone <phone-ip>   # owner's phone: 192.168.1.216 (may change w
   the Server IP. On iOS, this feature doesn't exist at all (sandboxing
   restrictions); sideloading is the only option there.
 
+### Screenshots (verifying layout)
+
+Since there's no emulator, check layout changes on the real watch: install,
+leave the watchface showing, then capture its screen over the same Developer
+Connection:
+```
+pebble screenshot --phone <phone-ip> <out>.png
+```
+Write the PNG to the scratchpad, not the repo, and open it with the Read tool
+to look at it. The owner's watch is 200×228 (emery-sized): 7 event rows fit,
+so don't size layout for the 144×168 Pebble Time screen. Events pushed from
+the phone are only visible if the calendar actually has that many upcoming
+events. Wait a few seconds after `pebble install` before capturing, so the
+watchface has finished redrawing.
+
 If none of this tooling is available in a given environment, say so rather
 than claiming a build was verified.
 

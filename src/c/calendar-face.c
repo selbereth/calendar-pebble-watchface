@@ -12,9 +12,10 @@
 #define PERSIST_KEY_RANGE 302
 
 #define INFO_LINE_HEIGHT 16
-#define SUN_COL_WIDTH 32
-#define RANGE_COL_WIDTH 24
-#define TIME_HEIGHT 34
+#define LEFT_COL_WIDTH 68   // fits "Mon Sep 28"
+#define RIGHT_COL_WIDTH 24
+#define TIME_HEIGHT 48  // three info lines tall
+#define BIG_TIME_MIN_WIDTH 100  // narrower screens fall back to a smaller font
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -194,52 +195,48 @@ static void main_window_load(Window *window) {
 
   int margin = PBL_IF_ROUND_ELSE(20, 6);
   int time_height = TIME_HEIGHT;
-  int content_w = bounds.size.w - (2 * margin);
   int top = PBL_IF_ROUND_ELSE(12, 2);
 
   int hdr_margin = PBL_IF_ROUND_ELSE(20, 2);
   int hdr_w = bounds.size.w - (2 * hdr_margin);
+  int time_x = hdr_margin + LEFT_COL_WIDTH;
+  int time_w = hdr_w - LEFT_COL_WIDTH - RIGHT_COL_WIDTH;
+  int right_x = time_x + time_w;
 
-  // Top line: date on the left, current temperature on the right.
-  s_date_layer = text_layer_create(GRect(hdr_margin, top, hdr_w / 2, INFO_LINE_HEIGHT));
-  s_weather_layer = text_layer_create(GRect(hdr_margin + hdr_w / 2, top,
-                                            hdr_w - hdr_w / 2, INFO_LINE_HEIGHT));
-  TextLayer *info_layers[] = { s_date_layer, s_weather_layer };
-  for (int i = 0; i < 2; i++) {
+  // Header is three info lines tall, in three columns:
+  //   date / sunrise / sunset  |  time (spans all three lines)  |  now / high / low
+  s_date_layer = text_layer_create(GRect(hdr_margin, top, LEFT_COL_WIDTH, INFO_LINE_HEIGHT));
+  s_sun_layer = text_layer_create(GRect(hdr_margin, top + INFO_LINE_HEIGHT, LEFT_COL_WIDTH,
+                                        2 * INFO_LINE_HEIGHT));
+  s_weather_layer = text_layer_create(GRect(right_x, top, RIGHT_COL_WIDTH, INFO_LINE_HEIGHT));
+  s_range_layer = text_layer_create(GRect(right_x, top + INFO_LINE_HEIGHT, RIGHT_COL_WIDTH,
+                                          2 * INFO_LINE_HEIGHT));
+  TextLayer *info_layers[] = { s_date_layer, s_sun_layer, s_weather_layer, s_range_layer };
+  for (int i = 0; i < 4; i++) {
     text_layer_set_background_color(info_layers[i], GColorClear);
     text_layer_set_text_color(info_layers[i], GColorWhite);
-    text_layer_set_font(info_layers[i], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
     layer_add_child(window_layer, text_layer_get_layer(info_layers[i]));
   }
-  text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
-  text_layer_set_text_alignment(s_weather_layer, GTextAlignmentRight);
-  text_layer_set_text(s_weather_layer, s_weather_buffer);
-
-  // Time row: sunrise over sunset | time | high over low.
-  int row_y = top + INFO_LINE_HEIGHT;
-  int time_x = hdr_margin + SUN_COL_WIDTH;
-  int time_w = hdr_w - SUN_COL_WIDTH - RANGE_COL_WIDTH;
-  GRect time_frame = GRect(time_x, row_y, time_w, time_height);
-  s_sun_layer = text_layer_create(GRect(hdr_margin, row_y, SUN_COL_WIDTH, time_height));
-  text_layer_set_font(s_sun_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_alignment(s_sun_layer, GTextAlignmentLeft);
-  text_layer_set_text(s_sun_layer, s_sun_buffer);
-  s_range_layer = text_layer_create(GRect(time_x + time_w, row_y, RANGE_COL_WIDTH, time_height));
+  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_font(s_sun_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_font(s_range_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
+  text_layer_set_text_alignment(s_sun_layer, GTextAlignmentLeft);
+  text_layer_set_text_alignment(s_weather_layer, GTextAlignmentRight);
   text_layer_set_text_alignment(s_range_layer, GTextAlignmentRight);
+  text_layer_set_text(s_sun_layer, s_sun_buffer);
+  text_layer_set_text(s_weather_layer, s_weather_buffer);
   text_layer_set_text(s_range_layer, s_range_buffer);
-  TextLayer *side_layers[] = { s_sun_layer, s_range_layer };
-  for (int i = 0; i < 2; i++) {
-    text_layer_set_background_color(side_layers[i], GColorClear);
-    text_layer_set_text_color(side_layers[i], GColorWhite);
-    layer_add_child(window_layer, text_layer_get_layer(side_layers[i]));
-  }
 
+  GRect time_frame = GRect(time_x, top, time_w, time_height);
   s_time_layer = text_layer_create(time_frame);
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorWhite);
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS));
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_time_layer, fonts_get_system_font(time_w >= BIG_TIME_MIN_WIDTH ?
+                                                        FONT_KEY_BITHAM_42_BOLD :
+                                                        FONT_KEY_LECO_32_BOLD_NUMBERS));
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentRight);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
   int divider_y = time_frame.origin.y + time_frame.size.h + 2;
@@ -276,7 +273,7 @@ static void main_window_load(Window *window) {
     s_event_title_layers[i] = text_layer_create(title_col);
     text_layer_set_background_color(s_event_title_layers[i], GColorClear);
     text_layer_set_text_color(s_event_title_layers[i], GColorWhite);
-    text_layer_set_font(s_event_title_layers[i], fonts_get_system_font(FONT_KEY_GOTHIC_18));
+    text_layer_set_font(s_event_title_layers[i], fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
     text_layer_set_text_alignment(s_event_title_layers[i], GTextAlignmentLeft);
     layer_add_child(window_layer, text_layer_get_layer(s_event_title_layers[i]));
 
