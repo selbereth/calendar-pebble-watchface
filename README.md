@@ -1,6 +1,6 @@
 # Calendar Watchface
 
-A Pebble watchface that shows the current time at the top and your next 3
+A Pebble watchface that shows the current time at the top and your next 5
 upcoming calendar events at the bottom.
 
 ## How it works
@@ -9,7 +9,7 @@ upcoming calendar events at the bottom.
   rows (time + title), and persists the last-received events so they
   survive a watch reboot.
 - The PebbleKit JS companion (`src/pkjs/index.js`) subscribes to the Pebble
-  mobile app's built-in `calendar/event` plugin source and pushes the next 3
+  mobile app's built-in `calendar/event` plugin source and pushes the next 5
   upcoming events to the watch over `AppMessage`. This reads whatever
   calendars are already synced through the Pebble app itself -- no ICS URL,
   no separate companion app, no manual configuration.
@@ -23,7 +23,7 @@ which is off by default:
    **Use experimental plugins**.
 2. Make sure your calendars are synced and enabled in the Pebble app's
    **Calendar** screen.
-3. Install this watchface. It should pick up your next 3 events
+3. Install this watchface. It should pick up your next 5 events
    automatically.
 
 Since the plugin API is still experimental and unstable, this is meant for

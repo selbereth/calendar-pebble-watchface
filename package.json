@@ -25,7 +25,8 @@
       "watchface": true
     },
     "capabilities": [
-      "configurable"
+      "configurable",
+      "location"
     ],
     "usesPermissions": [
       "Calendar"
@@ -36,7 +37,26 @@
       "EVENT_2_TITLE",
       "EVENT_2_TIME",
       "EVENT_3_TITLE",
-      "EVENT_3_TIME"
+      "EVENT_3_TIME",
+      "EVENT_4_TITLE",
+      "EVENT_4_TIME",
+      "EVENT_5_TITLE",
+      "EVENT_5_TIME",
+      "EVENT_6_TITLE",
+      "EVENT_6_TIME",
+      "EVENT_7_TITLE",
+      "EVENT_7_TIME",
+      "EVENT_8_TITLE",
+      "EVENT_8_TIME",
+      "EVENT_9_TITLE",
+      "EVENT_9_TIME",
+      "EVENT_10_TITLE",
+      "EVENT_10_TIME",
+      "EVENT_11_TITLE",
+      "EVENT_11_TIME",
+      "WEATHER",
+      "RANGE",
+      "SUN"
     ],
     "resources": {
       "media": []

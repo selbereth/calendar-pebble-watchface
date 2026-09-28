@@ -2,3 +2,6 @@ build/
 node_modules/
 *.pbw
 .pebble-cache/
+.pebble-venv/
+.arm-gnu-toolchain/
+.lock-waf_*
