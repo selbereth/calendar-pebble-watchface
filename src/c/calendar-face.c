@@ -108,12 +108,14 @@ static void main_window_load(Window *window) {
   int margin = PBL_IF_ROUND_ELSE(20, 6);
   int time_height = (int)(bounds.size.h * 0.34);
 
-  GRect time_frame = GRect(margin, PBL_IF_ROUND_ELSE(12, 4),
-                            bounds.size.w - (2 * margin), time_height);
+  // Full width, no side margin: BITHAM is wide enough that "10:24" (vs. "9:24")
+  // didn't fit inside the margin and got ellipsized. LECO is the condensed
+  // numeral font Pebble's own clock faces use so HH:MM always fits.
+  GRect time_frame = GRect(0, PBL_IF_ROUND_ELSE(12, 4), bounds.size.w, time_height);
   s_time_layer = text_layer_create(time_frame);
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorWhite);
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
