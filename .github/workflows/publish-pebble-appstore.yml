@@ -1,0 +1,106 @@
+name: Publish to Pebble Appstore
+
+# Manual only, on purpose -- see README.md "Publishing via GitHub Actions".
+# The CI auth token this requires expires after about an hour, and (per the
+# installed pebble-tool's source) every successful `pebble publish` goes
+# LIVE immediately regardless of any "draft"/"is-published" flag -- there is
+# no safe way to run this unattended or on every push.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type PUBLISH to confirm: this goes live immediately on success.'
+        required: true
+      release_notes:
+        description: 'Release notes for this version'
+        required: true
+      screenshots:
+        description: >
+          Space-separated repo-relative paths to screenshot/GIF files,
+          e.g. "screenshots/basalt_1.png screenshots/chalk_1.png". Filenames
+          must start with the platform name. Required on the very first
+          publish (new app) unless emulator_capture is enabled below; optional
+          after that.
+        required: false
+        default: ''
+      emulator_capture:
+        description: >
+          Auto-capture screenshots from the Pebble emulator instead of
+          supplying files above. UNVERIFIED: could not be tested end-to-end
+          from this sandbox -- try a manual run first if you rely on this.
+        required: false
+        default: 'false'
+      api_base:
+        description: 'Override appstore API base URL (leave blank for the default store).'
+        required: false
+        default: ''
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require explicit confirmation
+        env:
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "PUBLISH" ]; then
+            echo "::error::Confirmation input must be exactly 'PUBLISH' to proceed. This workflow publishes live on success -- aborting."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pebble-tool
+        run: |
+          python -m pip install --upgrade pip
+          # pebble-tool pulls in a dependency (pyqrcode) whose legacy setup.py
+          # needs the distutils shim modern setuptools dropped.
+          pip install "setuptools==58.0.0" wheel
+          pip install pebble-tool
+
+      - name: Install Pebble SDK
+        run: pebble sdk install latest
+
+      - name: Publish to Pebble Appstore
+        env:
+          PEBBLE_FIREBASE_ID_TOKEN: ${{ secrets.PEBBLE_FIREBASE_ID_TOKEN }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+          SCREENSHOTS: ${{ github.event.inputs.screenshots }}
+          EMULATOR_CAPTURE: ${{ github.event.inputs.emulator_capture }}
+          API_BASE: ${{ github.event.inputs.api_base }}
+        run: |
+          APP_DESCRIPTION=$(python3 -c "import json; print(json.load(open('package.json'))['description'])")
+
+          ARGS=(
+            publish
+            --non-interactive
+            --release-notes "$RELEASE_NOTES"
+            --description "$APP_DESCRIPTION"
+          )
+
+          if [ "$EMULATOR_CAPTURE" = "true" ]; then
+            ARGS+=(--gif-all-platforms --all-platforms)
+          else
+            ARGS+=(--no-gif-all-platforms)
+          fi
+
+          if [ -n "$SCREENSHOTS" ]; then
+            # Intentionally word-split: this is a space-separated list of paths.
+            ARGS+=(--screenshots $SCREENSHOTS)
+          fi
+
+          if [ -n "$API_BASE" ]; then
+            ARGS+=(--api-base "$API_BASE")
+          fi
+
+          pebble "${ARGS[@]}"

@@ -47,36 +47,42 @@ get a chance to update the watchface.
 ## Assets
 
 - App icon (25x25 PNG, launcher icon): `resources/images/icon.png` --
-  already wired into `package.json` via the `menuIcon` resource.
-- Store listing icon (larger marketing icon): generated at 144x144, sent
-  to you separately -- confirm the exact size the portal asks for at
-  upload time, and re-export from `resources/images/icon.png` if it needs
-  to be bigger.
+  already wired into `package.json` via the `menuIcon` resource. For a
+  watchface, this bundled icon is what the store listing uses too; `pebble
+  publish` doesn't take a separate marketing-icon upload for this app type
+  (that path in the tool is watchapp-only), so the 144x144 version sent
+  earlier isn't actually needed here.
 - Screenshots: **not included** -- these need to come from a real watch
   or emulator actually showing your events (with the experimental plugin
   flag on and a calendar enabled), one per platform shape you want to
   list (rectangular: Aplite/Basalt/Diorite/Emery/Flint; round: Chalk/
-  Gabbro). `pebble screenshot` can capture these from the emulator, or
-  photograph/screenshot a real watch.
+  Gabbro), named `<platform>_whatever.png` (e.g. `basalt_1.png`). Required
+  for the very first publish -- see below.
 
 ## Submission checklist
 
-These steps need your own accounts/hardware and can't be done from here:
+Publishing now goes through `.github/workflows/publish-pebble-appstore.yml`
+(see README.md "Publishing via GitHub Actions" for the full one-time setup
+and per-release steps). Short version:
 
-1. **Build a release `.pbw`:** `pebble build` (needs the Pebble/Rebble
-   SDK installed locally -- `pebble sdk install latest`) or build via
-   CloudPebble.
-2. **Decide which store:** the official Core Devices Pebble appstore
-   (via the Developer Dashboard / `pebble publish`) and/or the community
-   Rebble store (rebble.io/submit, dev-portal.rebble.io) are separate
-   destinations with separate listings -- pick one or both.
-3. **Register the app / create the listing**, using the UUID already in
-   `package.json` (`1f7f7c53-f504-4653-960f-910447e3d532`) -- that UUID
-   needs to stay fixed for all future versions of this app.
-4. **Capture screenshots** (see above).
-5. **Upload the `.pbw`**, icon, and screenshots, and submit for review,
-   mentioning the experimental-plugin dependency in the reviewer notes.
+1. **One-time:** `pebble login` locally, copy the saved `id_token` into a
+   `PEBBLE_FIREBASE_ID_TOKEN` GitHub Actions secret.
+2. **Each release:** refresh that secret (the token expires in ~1 hour),
+   bump `"version"` in `package.json`, then run the workflow from the
+   Actions tab with release notes and (for the first run) screenshots.
+3. That's it -- `pebble publish` registers the app on its first run (using
+   the UUID already in `package.json`,
+   `1f7f7c53-f504-4653-960f-910447e3d532`, which must stay fixed for all
+   future versions) and uploads subsequent releases to it after that.
 
-I couldn't verify the exact current submission UI/steps from here (the
-SDK/docs domains are blocked from this sandbox) -- the portal itself will
-walk you through specifics, but the list above is what it will ask for.
+Two things worth remembering, spelled out in the README: every successful
+run **publishes live immediately** (no draft mode, despite what the CLI's
+flags imply), and I could not run this workflow myself to confirm it works
+end-to-end -- the SDK/appstore domains are blocked from the sandbox this
+was built in, so treat the first real run as a test.
+
+If you'd rather target the community Rebble store (rebble.io/submit,
+dev-portal.rebble.io) instead of the default Core Devices one, that's a
+separate destination with its own listing -- the workflow's `api_base`
+input can point at it if you have that URL, otherwise it's a manual
+upload there.
