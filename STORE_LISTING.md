@@ -1,7 +1,6 @@
 # App Store Listing
 
-Draft copy and a submission checklist. Fill in the `TODO`s before
-submitting.
+Draft copy and a submission checklist.
 
 ## Listing copy
 
@@ -30,11 +29,10 @@ Gabbro (everything in `targetPlatforms` in `package.json`).
 Pebble app's calendar plugin -- nothing leaves your phone; this app makes
 no network requests of its own).
 
-**Support contact:** TODO -- an email or URL you're willing to make public.
+**Support contact:** samuelt12@gmail.com
 
-**Developer/company name shown on the listing:** TODO -- `package.json`
-currently has `"author": "samuelt12"`; confirm that's what you want shown
-publicly, or tell me what to put there instead.
+**Developer/company name shown on the listing:** samuelt12 (matches
+`"author"` in `package.json`).
 
 ## Known risk to disclose in reviewer notes
 
@@ -75,8 +73,7 @@ These steps need your own accounts/hardware and can't be done from here:
 3. **Register the app / create the listing**, using the UUID already in
    `package.json` (`1f7f7c53-f504-4653-960f-910447e3d532`) -- that UUID
    needs to stay fixed for all future versions of this app.
-4. **Capture screenshots** (see above) and **fill in the listing copy**
-   above, including the two TODOs.
+4. **Capture screenshots** (see above).
 5. **Upload the `.pbw`**, icon, and screenshots, and submit for review,
    mentioning the experimental-plugin dependency in the reviewer notes.
 
