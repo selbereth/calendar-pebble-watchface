@@ -12,10 +12,11 @@
 #define PERSIST_KEY_RANGE 302
 
 #define INFO_LINE_HEIGHT 16
-#define LEFT_COL_WIDTH 68   // fits "Mon Sep 28"
+#define DATE_SLACK 1
+#define TIME_SLACK 2
 #define RIGHT_COL_WIDTH 24
 #define TIME_HEIGHT 48  // three info lines tall
-#define BIG_TIME_MIN_WIDTH 100  // narrower screens fall back to a smaller font
+#define NARROW_TIME_HEIGHT 46  // Bitham 42 needs about this much when it has its own row
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -35,6 +36,68 @@ static char s_range_buffer[MAX_TEXT_LEN];
 static char s_event_title_buffers[EVENT_COUNT][MAX_TEXT_LEN];
 static char s_event_time_buffers[EVENT_COUNT][MAX_TEXT_LEN];
 
+static int text_width(const char *text, GFont font) {
+  return graphics_text_layout_get_content_size(text, font, GRect(0, 0, 400, TIME_HEIGHT),
+      GTextOverflowModeFill, GTextAlignmentLeft).w;
+}
+
+// From this 12-hour hour on, the date drops its weekday to give the clock more room.
+#define LONG_HOUR_START 10
+
+// Width of the widest real 12-hour time in this font, for hours first_hour..last_hour.
+static int widest_time_width(GFont font, int first_hour, int last_hour) {
+  int widest = 0;
+  char text[8];
+  for (int h = first_hour; h <= last_hour; h++) {
+    for (int m = 0; m < 60; m++) {
+      snprintf(text, sizeof(text), "%d:%02d", h, m);
+      int w = text_width(text, font);
+      if (w > widest) {
+        widest = w;
+      }
+    }
+  }
+  return widest;
+}
+
+// Width of the widest date the face can show ("%a %b %e"): the widest weekday, month and day
+// number, joined. Names come from strftime so a non-English locale is measured too.
+static int widest_date_width(GFont font, bool with_weekday) {
+  char name[16], widest_day[16] = "", widest_month[16] = "", widest_text[16] = "";
+  int widest_day_w = 0, widest_month_w = 0, widest_weekday_w = 0;
+  struct tm t = { 0 };
+  for (int i = 0; with_weekday && i < 7; i++) {
+    t.tm_wday = i;
+    strftime(name, sizeof(name), "%a", &t);
+    int w = text_width(name, font);
+    if (w > widest_weekday_w) {
+      widest_weekday_w = w;
+      strcpy(widest_text, name);
+    }
+  }
+  for (int i = 0; i < 12; i++) {
+    t.tm_mon = i;
+    strftime(name, sizeof(name), "%b", &t);
+    int w = text_width(name, font);
+    if (w > widest_month_w) {
+      widest_month_w = w;
+      strcpy(widest_month, name);
+    }
+  }
+  for (int d = 1; d <= 31; d++) {
+    snprintf(name, sizeof(name), "%d", d);
+    int w = text_width(name, font);
+    if (w > widest_day_w) {
+      widest_day_w = w;
+      strcpy(widest_day, name);
+    }
+  }
+  char date[48];
+  snprintf(date, sizeof(date), "%s%s%s %s", widest_text, with_weekday ? " " : "", widest_month,
+           widest_day);
+  return text_width(date, font);
+}
+
 static void update_time(void) {
   time_t now = time(NULL);
   struct tm *tick_time = localtime(&now);
@@ -44,7 +107,9 @@ static void update_time(void) {
   const char *time_text = s_time_buffer[0] == '0' ? s_time_buffer + 1 : s_time_buffer;
   text_layer_set_text(s_time_layer, time_text);
 
-  strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %e", tick_time);
+  int hour12 = tick_time->tm_hour % 12 == 0 ? 12 : tick_time->tm_hour % 12;
+  strftime(s_date_buffer, sizeof(s_date_buffer),
+           hour12 >= LONG_HOUR_START ? "%b %e" : "%a %b %e", tick_time);
   text_layer_set_text(s_date_layer, s_date_buffer);
 }
 
@@ -193,23 +258,77 @@ static void main_window_load(Window *window) {
 
   window_set_background_color(window, GColorBlack);
 
-  int margin = PBL_IF_ROUND_ELSE(20, 6);
-  int time_height = TIME_HEIGHT;
+  int margin = PBL_IF_ROUND_ELSE(bounds.size.w / 9, 6);  // round: inset scales with the bezel
   int top = PBL_IF_ROUND_ELSE(12, 2);
 
-  int hdr_margin = PBL_IF_ROUND_ELSE(20, 2);
+  int hdr_margin = PBL_IF_ROUND_ELSE(bounds.size.w / 9, 2);
   int hdr_w = bounds.size.w - (2 * hdr_margin);
-  int time_x = hdr_margin + LEFT_COL_WIDTH;
-  int time_w = hdr_w - LEFT_COL_WIDTH - RIGHT_COL_WIDTH;
-  int right_x = time_x + time_w;
+
+  // Same layout on every square screen: date and sun on the left, clock in the middle,
+  // weather on the right. Only the clock font changes: take the biggest one that fits at the
+  // widest time (checked over all 720) beside the widest date, with a pixel or two of slack.
+  // Hours 1-9 show the full date; hours 10-12 have the longest times, so the date loses its
+  // weekday and the clock gets that room. Round screens have no room beside the clock, so
+  // they stack (below).
+  GFont date_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  int date_w = widest_date_width(date_font, true) + DATE_SLACK;
+  int short_date_w = widest_date_width(date_font, false) + DATE_SLACK;
+  const char *time_font_keys[] = { FONT_KEY_BITHAM_42_BOLD, FONT_KEY_BITHAM_34_MEDIUM_NUMBERS,
+                                   FONT_KEY_LECO_32_BOLD_NUMBERS, FONT_KEY_GOTHIC_28_BOLD,
+                                   FONT_KEY_GOTHIC_24_BOLD, FONT_KEY_GOTHIC_18_BOLD };
+  const int font_count = sizeof(time_font_keys) / sizeof(time_font_keys[0]);
+  int room = hdr_w - RIGHT_COL_WIDTH;
+  GFont time_font = fonts_get_system_font(time_font_keys[0]);
+  int time_h = TIME_HEIGHT;
+  int time_w = hdr_w;
+  int left_w = 0;
+  int time_y = top;
+  bool inline_time = false;
+  for (int i = 0; i < font_count && !PBL_IF_ROUND_ELSE(true, false); i++) {
+    GFont f = fonts_get_system_font(time_font_keys[i]);
+    int short_hours_w = widest_time_width(f, 1, LONG_HOUR_START - 1) + TIME_SLACK;
+    int long_hours_w = widest_time_width(f, LONG_HOUR_START, 12) + TIME_SLACK;
+    time_font = f;
+    inline_time = true;
+    // The clock box starts where the short date ends; hours 1-9 are narrow enough to stay
+    // clear of the full date, hours 10-12 of the short one.
+    left_w = short_date_w;
+    time_w = room - short_date_w;
+    if (short_hours_w + date_w <= room && long_hours_w + short_date_w <= room) {
+      break;  // else keep shrinking; the smallest font is used if none fit
+    }
+  }
+  if (inline_time) {
+    // A smaller font is shorter than the three-line header: centre the clock vertically.
+    int text_h = graphics_text_layout_get_content_size("0:00", time_font,
+        GRect(0, 0, hdr_w, TIME_HEIGHT), GTextOverflowModeFill, GTextAlignmentRight).h;
+    time_y = top + (text_h < TIME_HEIGHT ? (TIME_HEIGHT - text_h) / 2 : 0);
+  }
+  int right_w = RIGHT_COL_WIDTH;
+  int time_x = hdr_margin + left_w;
+  int info_top = top;
+  GTextAlignment time_align = GTextAlignmentRight;
+  if (!inline_time) {
+    time_h = NARROW_TIME_HEIGHT;
+    time_x = hdr_margin;
+    time_align = GTextAlignmentCenter;
+    info_top = top + time_h;
+    left_w = hdr_w / 2;
+    right_w = hdr_w - left_w;
+  }
+  int right_x = hdr_margin + hdr_w - right_w;
+  if (inline_time) {
+    right_x = time_x + time_w;
+  }
 
   // Header is three info lines tall, in three columns:
   //   date / sunrise / sunset  |  time (spans all three lines)  |  now / high / low
-  s_date_layer = text_layer_create(GRect(hdr_margin, top, LEFT_COL_WIDTH, INFO_LINE_HEIGHT));
-  s_sun_layer = text_layer_create(GRect(hdr_margin, top + INFO_LINE_HEIGHT, LEFT_COL_WIDTH,
+  s_date_layer = text_layer_create(GRect(hdr_margin, info_top, inline_time ? date_w : left_w,
+                                         INFO_LINE_HEIGHT));
+  s_sun_layer = text_layer_create(GRect(hdr_margin, info_top + INFO_LINE_HEIGHT, left_w,
                                         2 * INFO_LINE_HEIGHT));
-  s_weather_layer = text_layer_create(GRect(right_x, top, RIGHT_COL_WIDTH, INFO_LINE_HEIGHT));
-  s_range_layer = text_layer_create(GRect(right_x, top + INFO_LINE_HEIGHT, RIGHT_COL_WIDTH,
+  s_weather_layer = text_layer_create(GRect(right_x, info_top, right_w, INFO_LINE_HEIGHT));
+  s_range_layer = text_layer_create(GRect(right_x, info_top + INFO_LINE_HEIGHT, right_w,
                                           2 * INFO_LINE_HEIGHT));
   TextLayer *info_layers[] = { s_date_layer, s_sun_layer, s_weather_layer, s_range_layer };
   for (int i = 0; i < 4; i++) {
@@ -229,23 +348,22 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_weather_layer, s_weather_buffer);
   text_layer_set_text(s_range_layer, s_range_buffer);
 
-  GRect time_frame = GRect(time_x, top, time_w, time_height);
+  GRect time_frame = GRect(time_x, time_y, time_w, time_h);
   s_time_layer = text_layer_create(time_frame);
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorWhite);
-  text_layer_set_font(s_time_layer, fonts_get_system_font(time_w >= BIG_TIME_MIN_WIDTH ?
-                                                        FONT_KEY_BITHAM_42_BOLD :
-                                                        FONT_KEY_LECO_32_BOLD_NUMBERS));
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentRight);
+  text_layer_set_font(s_time_layer, time_font);
+  text_layer_set_text_alignment(s_time_layer, time_align);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
-  int divider_y = time_frame.origin.y + time_frame.size.h + 2;
+  int header_bottom = info_top + 3 * INFO_LINE_HEIGHT;
+  int divider_y = header_bottom + 2;
   s_divider_layer = layer_create(GRect(margin, divider_y, bounds.size.w - (2 * margin), 1));
   layer_set_update_proc(s_divider_layer, divider_update_proc);
   layer_add_child(window_layer, s_divider_layer);
 
   int events_top = divider_y + 6;
-  int events_height = bounds.size.h - events_top - 4;
+  int events_height = bounds.size.h - events_top - PBL_IF_ROUND_ELSE(bounds.size.h / 9, 4);
   int visible_rows = events_height / MIN_ROW_HEIGHT;
   if (visible_rows > EVENT_COUNT) {
     visible_rows = EVENT_COUNT;

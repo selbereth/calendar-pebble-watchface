@@ -1,0 +1,56 @@
+# Store listing: Calendar
+
+Copy for the Pebble/Rebble developer portal. Screenshots are in `screenshots/`
+(one per platform, sample data). The portal wants a source URL, a category and
+a release note on every upload.
+
+| Field | Value |
+|---|---|
+| Name | Calendar |
+| Type | Watchface |
+| Category | Daily |
+| Version | 1.0.0 |
+| Platforms | aplite, basalt, chalk, diorite, emery, flint, gabbro |
+| Bundle | `build/calendar-pebble-watchface.pbw` |
+| Source URL | _(fill in: the GitHub repo)_ |
+
+## Description
+
+Your next calendar events, right on your watch face.
+
+Calendar shows a big 12-hour clock, the date, the current temperature with
+today's high and low, and sunrise and sunset, with your upcoming events listed
+underneath. It shows as many events as fit your screen, up to 11. Events come
+from the calendars already synced in the Pebble mobile app, so there is no
+account to link, no ICS URL and no separate app.
+
+Roomy screens put the clock inline with the date and weather; smaller and round
+screens stack the clock above them. The last events and weather are kept, so
+the face is never blank after a reboot.
+
+## Setup (required)
+
+Calendar reads events through the Pebble mobile app's **experimental plugin
+API** (app v1.14.0 or newer), which is off by default:
+
+1. In the Pebble app: **Settings > Debug > Show debug options**, then turn on
+   **Use experimental plugins**.
+2. Make sure your calendars are synced and enabled in the app's **Calendar**
+   screen.
+
+Without this the watch shows "No upcoming events". The plugin API is
+experimental and may change in a future app release.
+
+## Permissions and data
+
+- **Calendar:** reads event names and start times from the Pebble app.
+- **Location:** used only to fetch local weather and sun times.
+- **Network:** requests weather from [Open-Meteo](https://open-meteo.com/),
+  sending the phone's coordinates. No account, no key, nothing else is sent.
+- Temperatures are in Fahrenheit (a constant in `src/pkjs/index.js`).
+
+## Release notes (1.0.0)
+
+First release. Time, date, weather, sunrise/sunset and your next calendar
+events on every Pebble platform, with inline or stacked layout depending on
+screen size.
