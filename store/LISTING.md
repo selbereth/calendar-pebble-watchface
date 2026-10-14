@@ -16,6 +16,8 @@ a release note on every upload.
 | Support contact | samuelt12@gmail.com |
 | Developer name | selbereth (`author` in `package.json`; the store's developer name is set on the dashboard) |
 | Icon | `resources/images/icon.png` (25x25, wired in as the menu icon) |
+| Store icons | `assets/icon_80.png` (iconSmall) and `assets/icon_144.png` (iconLarge), the sizes `pebble publish --icon-small/--icon-large` ask for; used at app creation only, so for the live listing upload them on the dashboard |
+| Banner | `assets/banner_720x320.png` (720x320; the size is a guess, the publish tool does not say, so check the dashboard's requirement) |
 
 ## Description
 
