@@ -12,7 +12,10 @@ a release note on every upload.
 | Version | 1.0.0 |
 | Platforms | aplite, basalt, chalk, diorite, emery, flint, gabbro |
 | Bundle | `build/calendar-pebble-watchface.pbw` |
-| Source URL | _(fill in: the GitHub repo)_ |
+| Source URL | https://github.com/selbereth/calendar-pebble-watchface (check the repo is public before submitting) |
+| Support contact | samuelt12@gmail.com |
+| Developer name | samuelt12 (matches `author` in `package.json`) |
+| Icon | `resources/images/icon.png` (25x25, wired in as the menu icon) |
 
 ## Description
 
@@ -40,6 +43,23 @@ API** (app v1.14.0 or newer), which is off by default:
 
 Without this the watch shows "No upcoming events". The plugin API is
 experimental and may change in a future app release.
+
+## Notes for the reviewer
+
+The calendar data comes from the Pebble mobile app's experimental plugin API, which the
+platform docs say is not ready for the store and may change. Without "Use experimental
+plugins" turned on, the face shows "No upcoming events". Say so in the reviewer-notes
+field.
+
+## Publishing
+
+- **Core Devices store (default):** `pebble login` once (opens a browser), then
+  `pebble publish --non-interactive --release-notes "<notes>" --description "<description>"
+  --screenshots store/screenshots/*.png`. Every successful publish goes live immediately
+  (`pebble_tool/commands/publish.py` hard-codes `isPublished` and `visible` to true; the
+  `--is-published` flag does nothing). The UUID in `package.json` must never change.
+- **Rebble store:** manual upload of `build/calendar-pebble-watchface.pbw` and the same
+  screenshots through the Rebble developer portal; the publish tool does not target it.
 
 ## Permissions and data
 

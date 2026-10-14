@@ -1,5 +1,6 @@
 {
   "name": "calendar-pebble-watchface",
+  "description": "Time, date, weather and sunrise/sunset, with your upcoming calendar events underneath.",
   "author": "samuelt12",
   "version": "1.0.0",
   "keywords": [
@@ -59,7 +60,14 @@
       "SUN"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "menuIcon": true,
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "images/icon.png"
+        }
+      ]
     }
   }
 }
