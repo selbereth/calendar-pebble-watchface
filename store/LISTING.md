@@ -14,22 +14,24 @@ a release note on every upload.
 | Bundle | `build/calendar-pebble-watchface.pbw` |
 | Source URL | https://github.com/selbereth/calendar-pebble-watchface (check the repo is public before submitting) |
 | Support contact | samuelt12@gmail.com |
-| Developer name | samuelt12 (matches `author` in `package.json`) |
+| Developer name | selbereth (`author` in `package.json`; the store's developer name is set on the dashboard) |
 | Icon | `resources/images/icon.png` (25x25, wired in as the menu icon) |
 
 ## Description
 
-Your next calendar events, right on your watch face.
+**Short (the `--description` / one-liner):** Your upcoming calendar events on your watch face, with a big clock, date, weather and sunrise/sunset.
 
-Calendar shows a big 12-hour clock, the date, the current temperature with
-today's high and low, and sunrise and sunset, with your upcoming events listed
-underneath. It shows as many events as fit your screen, up to 11. Events come
-from the calendars already synced in the Pebble mobile app, so there is no
-account to link, no ICS URL and no separate app.
+**Long:**
 
-Roomy screens put the clock inline with the date and weather; smaller and round
-screens stack the clock above them. The last events and weather are kept, so
-the face is never blank after a reboot.
+Your calendar, on your watch face. Calendar lists your next appointments, with their
+start times, right under the clock, as many as fit your screen (up to 11). Events come from
+the calendars already synced in the Pebble mobile app, so there is no account to link, no
+ICS URL and no separate app to set up.
+
+Nice extras: a big 12-hour clock, the date, the current temperature with today's high and
+low, and sunrise and sunset. The last events and weather are kept, so the face is never blank
+after a reboot. Square screens use a compact header; round screens stack the clock above the
+info lines.
 
 ## Setup (required)
 

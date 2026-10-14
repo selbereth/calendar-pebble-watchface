@@ -1,7 +1,7 @@
 {
   "name": "calendar-pebble-watchface",
-  "description": "Time, date, weather and sunrise/sunset, with your upcoming calendar events underneath.",
-  "author": "samuelt12",
+  "description": "Your upcoming calendar events on your watch face, with a big clock, date, weather and sunrise/sunset.",
+  "author": "selbereth",
   "version": "1.0.0",
   "keywords": [
     "pebble-app"
