@@ -13,6 +13,8 @@
 
 #define INFO_LINE_HEIGHT 16
 #define DATE_SLACK 1
+#define MIN_SUN_COL_WIDTH 36  // fits "06:58"
+#define COMPACT_TIME_EXTRA 4  // the clock font is a little taller than two info lines
 #define TIME_SLACK 2
 #define RIGHT_COL_WIDTH 24
 #define TIME_HEIGHT 48  // three info lines tall
@@ -98,6 +100,32 @@ static int widest_date_width(GFont font, bool with_weekday) {
   return text_width(date, font);
 }
 
+// Compact header on every square screen: sun times top-left, clock two info lines tall at the
+// right, and the date and weather sharing the third line. Round screens stack instead.
+#define COMPACT_HEADER PBL_IF_ROUND_ELSE(0, 1)
+static bool s_compact;
+
+// Normal layout: "now" and "high/low" sit in their own column. Compact layout: one line,
+// "58° 64/47".
+static void refresh_weather_text(void) {
+  if (!s_compact) {
+    text_layer_set_text(s_weather_layer, s_weather_buffer);
+    text_layer_set_text(s_range_layer, s_range_buffer);
+    return;
+  }
+  static char line[MAX_TEXT_LEN];
+  int n = snprintf(line, sizeof(line), "%s ", s_weather_buffer);
+  for (const char *c = s_range_buffer; *c && n < (int)sizeof(line) - 1; c++) {
+    if (*c == '\n') {
+      line[n++] = '/';
+    } else if ((unsigned char)*c != 0xC2 && (unsigned char)*c != 0xB0) {  // drop the degree sign
+      line[n++] = *c;
+    }
+  }
+  line[n] = '\0';
+  text_layer_set_text(s_weather_layer, line);
+}
+
 static void update_time(void) {
   time_t now = time(NULL);
   struct tm *tick_time = localtime(&now);
@@ -109,7 +137,7 @@ static void update_time(void) {
 
   int hour12 = tick_time->tm_hour % 12 == 0 ? 12 : tick_time->tm_hour % 12;
   strftime(s_date_buffer, sizeof(s_date_buffer),
-           hour12 >= LONG_HOUR_START ? "%b %e" : "%a %b %e", tick_time);
+           !s_compact && hour12 >= LONG_HOUR_START ? "%b %e" : "%a %b %e", tick_time);
   text_layer_set_text(s_date_layer, s_date_buffer);
 }
 
@@ -197,14 +225,14 @@ static void inbox_received_handler(DictionaryIterator *iterator, void *context) 
     strncpy(s_weather_buffer, weather_tuple->value->cstring, MAX_TEXT_LEN);
     s_weather_buffer[MAX_TEXT_LEN - 1] = '\0';
     persist_write_string(PERSIST_KEY_WEATHER, s_weather_buffer);
-    text_layer_set_text(s_weather_layer, s_weather_buffer);
+    refresh_weather_text();
   }
   Tuple *range_tuple = dict_find(iterator, MESSAGE_KEY_RANGE);
   if (range_tuple) {
     strncpy(s_range_buffer, range_tuple->value->cstring, MAX_TEXT_LEN);
     s_range_buffer[MAX_TEXT_LEN - 1] = '\0';
     persist_write_string(PERSIST_KEY_RANGE, s_range_buffer);
-    text_layer_set_text(s_range_layer, s_range_buffer);
+    refresh_weather_text();
   }
   Tuple *sun_tuple = dict_find(iterator, MESSAGE_KEY_SUN);
   if (sun_tuple) {
@@ -284,7 +312,25 @@ static void main_window_load(Window *window) {
   int left_w = 0;
   int time_y = top;
   bool inline_time = false;
-  for (int i = 0; i < font_count && !PBL_IF_ROUND_ELSE(true, false); i++) {
+  bool compact = false;
+  if (COMPACT_HEADER) {
+    // Biggest clock that stays two info lines tall and leaves room for the sun times.
+    GFont f = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
+    int w = widest_time_width(f, 1, 12) + TIME_SLACK;
+    if (hdr_w - w < MIN_SUN_COL_WIDTH) {
+      f = fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS);
+      w = widest_time_width(f, 1, 12) + TIME_SLACK;
+    }
+    time_font = f;
+    time_w = w;
+    time_h = (2 * INFO_LINE_HEIGHT) + COMPACT_TIME_EXTRA;
+    time_y = top - (COMPACT_TIME_EXTRA / 2);
+    left_w = hdr_w - w;
+    inline_time = true;
+    compact = true;
+  }
+  s_compact = compact;
+  for (int i = 0; i < font_count && !compact && !PBL_IF_ROUND_ELSE(true, false); i++) {
     GFont f = fonts_get_system_font(time_font_keys[i]);
     int short_hours_w = widest_time_width(f, 1, LONG_HOUR_START - 1) + TIME_SLACK;
     int long_hours_w = widest_time_width(f, LONG_HOUR_START, 12) + TIME_SLACK;
@@ -298,7 +344,7 @@ static void main_window_load(Window *window) {
       break;  // else keep shrinking; the smallest font is used if none fit
     }
   }
-  if (inline_time) {
+  if (inline_time && !compact) {
     // A smaller font is shorter than the three-line header: centre the clock vertically.
     int text_h = graphics_text_layout_get_content_size("0:00", time_font,
         GRect(0, 0, hdr_w, TIME_HEIGHT), GTextOverflowModeFill, GTextAlignmentRight).h;
@@ -345,8 +391,17 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentRight);
   text_layer_set_text_alignment(s_range_layer, GTextAlignmentRight);
   text_layer_set_text(s_sun_layer, s_sun_buffer);
-  text_layer_set_text(s_weather_layer, s_weather_buffer);
-  text_layer_set_text(s_range_layer, s_range_buffer);
+  if (compact) {
+    int row3 = top + (2 * INFO_LINE_HEIGHT);
+    layer_set_frame(text_layer_get_layer(s_sun_layer),
+                    GRect(hdr_margin, top, left_w, 2 * INFO_LINE_HEIGHT));
+    layer_set_frame(text_layer_get_layer(s_date_layer),
+                    GRect(hdr_margin, row3, date_w, INFO_LINE_HEIGHT));
+    layer_set_frame(text_layer_get_layer(s_weather_layer),
+                    GRect(hdr_margin + date_w, row3, hdr_w - date_w, INFO_LINE_HEIGHT));
+    layer_set_hidden(text_layer_get_layer(s_range_layer), true);
+  }
+  refresh_weather_text();
 
   GRect time_frame = GRect(time_x, time_y, time_w, time_h);
   s_time_layer = text_layer_create(time_frame);
