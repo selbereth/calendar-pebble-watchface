@@ -61,12 +61,10 @@ What actually worked, in order:
    ```
    Add `.arm-gnu-toolchain/bin` to `PATH` before running `pebble build`.
 
-5. **Emulator (`pebble install --emulator basalt`) does not work on macOS
-   arm64.** It needs `qemu-pebble`, a custom QEMU fork with no arm64 binary
-   and no maintained build path (the only Homebrew formula,
-   `pebble/pebble-sdk/pebble-qemu`, only has Intel bottles from 2016 and is
-   broken with current Homebrew). Don't try to install the emulator on this
-   platform — go straight to phone install/sideload instead.
+5. **Emulator**: it works on macOS arm64 once the PebbleOS SDK is installed
+   (it bundles `qemu-pebble` and an ARM toolchain). See "Running the
+   emulator" below. Do not use the Homebrew `pebble/pebble-sdk` tap: its
+   `pebble-qemu` formula is from 2016 and Intel-only.
 
 Putting it together, a full build on this machine:
 ```
@@ -75,6 +73,35 @@ export PATH="$PWD/.arm-gnu-toolchain/bin:$PATH"
 pebble build
 pebble install --phone <phone-ip>   # owner's phone: 192.168.1.216 (may change with DHCP)
 ```
+
+### Running the emulator
+
+Verified 2026-10-12 on macOS arm64, but with the `audiobookshelf-app/pebble`
+project (basalt), not yet with this one. The `calendar/event` source is a
+phone-side plugin, so the emulator shows the watch UI only, not real events.
+
+One-time setup (ask the user first: it downloads a few hundred MB):
+```
+brew install node libpng uv
+uv tool install pebble-tool --python 3.13   # 3.10-3.13 only; 3.14 unsupported
+pebble sdk install latest
+curl -LsSf https://github.com/coredevices/PebbleOS-SDK/releases/latest/download/pebbleos-sdk-installer.sh -o installer.sh
+sh installer.sh --defaults                  # read installer.sh first; installs ~/pebbleos-sdk-<version>
+```
+This project's own `.pebble-venv` pebble-tool is a separate install. Use
+either one, but not both on one PATH.
+
+Every shell:
+```
+. ~/pebbleos-sdk-<version>/env.sh     # puts qemu-pebble and arm-none-eabi-gcc on PATH
+pebble build
+pebble install --emulator basalt      # or emery (200x228, the owner's watch size)
+pebble screenshot --no-open --emulator basalt "$TMPDIR/shot.png"   # then Read the PNG
+pebble emu-button click select --emulator basalt
+pebble kill && pebble wipe            # when the emulator is stuck or shows a stale app
+```
+With the bundled toolchain, the `.arm-gnu-toolchain` workaround in step 4 is
+not needed. Emulator keys: Q back, W up, S select, X down.
 
 ### Installing to a physical watch
 
@@ -90,8 +117,8 @@ pebble install --phone <phone-ip>   # owner's phone: 192.168.1.216 (may change w
 
 ### Screenshots (verifying layout)
 
-Since there's no emulator, check layout changes on the real watch: install,
-leave the watchface showing, then capture its screen over the same Developer
+Check layout quickly on the emulator (see above). For the real watch: install,
+leave the watchface showing, then capture its screen over the Developer
 Connection:
 ```
 pebble screenshot --phone <phone-ip> <out>.png
