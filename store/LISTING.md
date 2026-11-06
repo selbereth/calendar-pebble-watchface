@@ -9,7 +9,7 @@ a release note on every upload.
 | Name | Calendar |
 | Type | Watchface |
 | Category | Daily |
-| Version | 1.0.0 |
+| Version | 1.0.1 |
 | Platforms | aplite, basalt, chalk, diorite, emery, flint, gabbro |
 | Bundle | `build/calendar-pebble-watchface.pbw` |
 | Source URL | https://github.com/selbereth/calendar-pebble-watchface (check the repo is public before submitting) |
@@ -57,6 +57,11 @@ field.
 
 ## Publishing
 
+- **Build with `pack-plugin-pbw.py`, not plain `pebble build`.** The Core Devices app treats a pbw
+  without `manifestVersion: 2` as a legacy app and ignores `usesPermissions`. From the
+  `coredevices-mobileapp` checkout: `python3 src/scripts/pack-plugin-pbw.py <this repo>`
+  (with the PebbleOS SDK `env.sh` sourced). Check `unzip -p build/*.pbw appinfo.json` shows
+  `"manifestVersion": 2`.
 - **Core Devices store (default):** `pebble login` once (opens a browser), then
   `pebble publish --non-interactive --release-notes "<notes>" --description "<description>"
   --screenshots store/screenshots/*.png`. Every successful publish goes live immediately
@@ -67,11 +72,19 @@ field.
 
 ## Permissions and data
 
+Declared in `usesPermissions` in `package.json` (the Core Devices app's permission system):
+
 - **Calendar:** reads event names and start times from the Pebble app.
 - **Location:** used only to fetch local weather and sun times.
-- **Network:** requests weather from [Open-Meteo](https://open-meteo.com/),
-  sending the phone's coordinates. No account, no key, nothing else is sent.
+- **Internet, `api.open-meteo.com` only:** requests weather from [Open-Meteo](https://open-meteo.com/),
+  sending the phone's coordinates. No account, no key, nothing else is sent. The Core app asks
+  the user to approve this domain when the face is installed.
 - Temperatures are in Fahrenheit (a constant in `src/pkjs/index.js`).
+
+## Release notes (1.0.1)
+
+Declares the permissions the Core Devices app now asks for: calendar, location, and internet
+access to api.open-meteo.com only (weather and sun times). No change to the layout.
 
 ## Release notes (1.0.0)
 

@@ -39,4 +39,8 @@ pebble build
 pebble install --phone <phone-ip>   # or --emulator basalt
 ```
 
+For a build the Core Devices app treats as using permissions (needed for the store and for
+real-phone testing), package with the app's script instead of plain `pebble build`:
+`python3 <coredevices-mobileapp>/src/scripts/pack-plugin-pbw.py .`
+
 Requires the Pebble/Rebble SDK tooling (`pebble-tool`).

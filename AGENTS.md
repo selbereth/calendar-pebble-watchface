@@ -66,6 +66,13 @@ What actually worked, in order:
    emulator" below. Do not use the Homebrew `pebble/pebble-sdk` tap: its
    `pebble-qemu` formula is from 2016 and Intel-only.
 
+**Permissions (Core Devices app 1.15+):** `package.json` declares `usesPermissions` (Calendar,
+Location, Internet for `api.open-meteo.com`). A plain `pebble build` leaves the pbw a legacy app
+(no `manifestVersion`), so build for the phone and the store with
+`python3 ~/projects/coredevices-mobileapp/src/scripts/pack-plugin-pbw.py .` (source the PebbleOS
+SDK `env.sh` first). Install by the Core app's Apps-tab import button; the adb VIEW intent alone did
+not install it. Add any new network domain to `usesPermissions`.
+
 Putting it together, a full build on this machine:
 ```
 source .pebble-venv/bin/activate

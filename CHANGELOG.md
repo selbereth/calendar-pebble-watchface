@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Declares permissions for the Core Devices app's new permission system: Calendar, Location,
+  and Internet limited to api.open-meteo.com (weather and sun times).
+- Build is marked as using permissions (`manifestVersion: 2`).
+
 ## 1.0.0
 
 - Initial release.
