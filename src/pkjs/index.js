@@ -97,9 +97,10 @@ function subscribe() {
 //   separator:  0 = "/", 1 = "." (written "9.11."), 2 = "-"; numbers only
 //   weekday:    1 = show the weekday, 0 = hide it
 //   invert:     0 = white on black, 1 = black on white
+//   eventTimeFormat: 0 = same as the clock, 1 = 12-hour, 2 = 24-hour (event times only)
 //   tempUnit:   0 = Fahrenheit, 1 = Celsius (phone side only: the weather text is built here)
 var DEFAULT_SETTINGS = { timeFormat: 0, dateStyle: 0, dayFirst: 0, separator: 0, weekday: 1,
-  invert: 0, tempUnit: 0 };
+  invert: 0, tempUnit: 0, eventTimeFormat: 0 };
 
 function loadSettings() {
   var saved = {};
@@ -131,6 +132,7 @@ function sendSettings(settings) {
     DATE_SEPARATOR: settings.separator,
     SHOW_WEEKDAY: settings.weekday,
     INVERT: settings.invert,
+    EVENT_TIME_FORMAT: settings.eventTimeFormat,
   }, function () {}, function (e) {
     console.log('Calendar: settings sendAppMessage failed: ' + JSON.stringify(e));
   });
@@ -156,6 +158,8 @@ function configPage(settings) {
     '<form id="f">' +
     '<h2>Time</h2>' +
     opts('timeFormat', [[0, '12-hour'], [1, '24-hour'], [2, 'Follow the watch setting']]) +
+    '<h2>Event times</h2>' +
+    opts('eventTimeFormat', [[0, 'Same as the clock'], [1, '12-hour'], [2, '24-hour']]) +
     '<h2>Date</h2>' +
     opts('dateStyle', [[0, 'Words (Nov 9)'], [1, 'Numbers (11/9)']]) +
     '<h2>Date order</h2>' +
@@ -174,7 +178,7 @@ function configPage(settings) {
     'screen.</small></p>' +
     '<script>document.getElementById("f").addEventListener("submit",function(e){' +
     'e.preventDefault();var o={};["timeFormat","dateStyle","dayFirst","separator","weekday",' +
-    '"invert","tempUnit"].forEach(function(n){o[n]=parseInt(document.querySelector(' +
+    '"invert","tempUnit","eventTimeFormat"].forEach(function(n){o[n]=parseInt(document.querySelector(' +
     '"input[name="+n+"]:checked").value,10)});' +
     'document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify(o))});</script>' +
     '</body></html>';

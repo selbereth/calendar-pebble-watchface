@@ -72,7 +72,8 @@
       "DATE_DAY_FIRST",
       "DATE_SEPARATOR",
       "SHOW_WEEKDAY",
-      "INVERT"
+      "INVERT",
+      "EVENT_TIME_FORMAT"
     ],
     "resources": {
       "media": [

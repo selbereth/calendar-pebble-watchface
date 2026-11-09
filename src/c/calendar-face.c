@@ -26,6 +26,7 @@
 enum { TIME_12H = 0, TIME_24H = 1, TIME_AUTO = 2 };
 enum { DATE_WORDS = 0, DATE_NUMBERS = 1 };
 enum { SEP_SLASH = 0, SEP_DOT = 1, SEP_DASH = 2 };
+enum { EVENTS_SAME = 0, EVENTS_12H = 1, EVENTS_24H = 2 };  // event times: follow the clock or force
 
 typedef struct {
   uint8_t time_format;   // TIME_*
@@ -34,14 +35,19 @@ typedef struct {
   uint8_t date_sep;      // SEP_*, numeric dates only
   uint8_t show_weekday;  // 0/1
   uint8_t invert;        // 0 = white on black, 1 = black on white
+  uint8_t event_format;  // EVENTS_* 
 } Settings;
 
-static Settings s_settings = { TIME_12H, DATE_WORDS, 0, SEP_SLASH, 1, 0 };
+static Settings s_settings = { TIME_12H, DATE_WORDS, 0, SEP_SLASH, 1, 0, EVENTS_SAME };
 static GColor s_fg, s_bg;
 
 static bool use_24h(void) {
   return s_settings.time_format == TIME_24H ||
          (s_settings.time_format == TIME_AUTO && clock_is_24h_style());
+}
+
+static bool event_24h(void) {
+  return s_settings.event_format == EVENTS_SAME ? use_24h() : s_settings.event_format == EVENTS_24H;
 }
 
 static Window *s_main_window;
@@ -159,7 +165,7 @@ static void format_event_time(char *out, size_t n, const char *in) {
   if (later) {
     p++;
   }
-  if (!use_24h() && strlen(p) == 5 && p[2] == ':' && isdigit((int)p[0]) && isdigit((int)p[1]) &&
+  if (!event_24h() && strlen(p) == 5 && p[2] == ':' && isdigit((int)p[0]) && isdigit((int)p[1]) &&
       isdigit((int)p[3]) && isdigit((int)p[4])) {
     int h = (p[0] - '0') * 10 + (p[1] - '0');
     snprintf(out, n, "%s%d:%c%c%c", later ? "+" : "", h % 12 == 0 ? 12 : h % 12, p[3], p[4],
@@ -329,6 +335,8 @@ static void apply_settings(DictionaryIterator *iterator) {
   if ((t = dict_find(iterator, MESSAGE_KEY_DATE_SEPARATOR))) next.date_sep = t->value->int32;
   if ((t = dict_find(iterator, MESSAGE_KEY_SHOW_WEEKDAY))) next.show_weekday = t->value->int32 != 0;
   if ((t = dict_find(iterator, MESSAGE_KEY_INVERT))) next.invert = t->value->int32 != 0;
+  if ((t = dict_find(iterator, MESSAGE_KEY_EVENT_TIME_FORMAT))) next.event_format = t->value->int32;
+  if (next.event_format > EVENTS_24H) next.event_format = EVENTS_SAME;
   if (next.time_format > TIME_AUTO) next.time_format = TIME_12H;
   if (next.date_style > DATE_NUMBERS) next.date_style = DATE_WORDS;
   if (next.date_sep > SEP_DASH) next.date_sep = SEP_SLASH;
