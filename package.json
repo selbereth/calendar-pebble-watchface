@@ -2,7 +2,7 @@
   "name": "calendar-pebble-watchface",
   "description": "Your upcoming calendar events on your watch face, with a big clock, date, weather and sunrise/sunset.",
   "author": "selbereth",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "keywords": [
     "pebble-app"
   ],
@@ -66,7 +66,13 @@
       "EVENT_11_TIME",
       "WEATHER",
       "RANGE",
-      "SUN"
+      "SUN",
+      "TIME_FORMAT",
+      "DATE_STYLE",
+      "DATE_DAY_FIRST",
+      "DATE_SEPARATOR",
+      "SHOW_WEEKDAY",
+      "INVERT"
     ],
     "resources": {
       "media": [

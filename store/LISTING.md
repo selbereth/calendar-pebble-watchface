@@ -30,8 +30,9 @@ start times, right under the clock, as many as fit your screen (up to 11). Event
 the calendars already synced in the Pebble mobile app, so there is no account to link, no
 ICS URL and no separate app to set up.
 
-Nice extras: a big 12-hour clock, the date, the current temperature with today's high and
-low, and sunrise and sunset. The last events and weather are kept, so the face is never blank
+Nice extras: a big clock (12-hour or 24-hour), the date (words or numbers, in your order),
+the current temperature with today's high and low, and sunrise and sunset. A white-on-black or
+inverted black-on-white look, the time format and the date format are all in the settings. The last events and weather are kept, so the face is never blank
 after a reboot. Square screens use a compact header; round screens stack the clock above the
 info lines.
 

@@ -15,6 +15,16 @@ the top and your next upcoming calendar events below, as many as fit the screen
   calendars are already synced through the Pebble app itself -- no ICS URL,
   no separate companion app, no manual configuration.
 
+## Settings
+
+Open the watchface's settings in the Pebble app: 12-hour, 24-hour or follow-the-watch time;
+date as words (`Nov 9`) or numbers (`11/9`, `9.11.`, `11-9`), month or day first, weekday on
+or off; white on black or inverted. The page is built in `src/pkjs/index.js` (`configPage`),
+stored in the phone's `localStorage`, and sent to the watch over `AppMessage` (keys
+`TIME_FORMAT`, `DATE_STYLE`, `DATE_DAY_FIRST`, `DATE_SEPARATOR`, `SHOW_WEEKDAY`, `INVERT`),
+where it is persisted and the layout is rebuilt. Event times arrive as 24-hour text and the
+watch re-writes them for the 12-hour setting.
+
 ## Setup
 
 This relies on the mobile app's **experimental plugin API** (v1.14.0+),

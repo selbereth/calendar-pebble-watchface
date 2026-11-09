@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- New settings page (open it from the watchface's settings in the Pebble app):
+  - Time: 12-hour, 24-hour, or follow the watch's own setting. Event times follow it too
+    (`9:30a` in 12-hour mode).
+  - Date: words (`Nov 9`) or numbers (`11/9`), month first or day first, separator `/`, `.`
+    (`9.11.`) or `-`, weekday shown or hidden.
+  - Colours: white on black, or inverted (black on white).
+- The date no longer has a double space before single-digit days.
+
 ## 1.0.1
 
 - Declares permissions for the Core Devices app's new permission system: Calendar, Location,
