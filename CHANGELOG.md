@@ -8,6 +8,7 @@
   - Date: words (`Nov 9`) or numbers (`11/9`), month first or day first, separator `/`, `.`
     (`9.11.`) or `-`, weekday shown or hidden.
   - Colours: white on black, or inverted (black on white).
+  - Temperature: Fahrenheit or Celsius.
 - Setup and the store listing no longer ask for "Use experimental plugins".
 - The date no longer has a double space before single-digit days.
 

@@ -19,7 +19,8 @@ the top and your next upcoming calendar events below, as many as fit the screen
 
 Open the watchface's settings in the Pebble app: 12-hour, 24-hour or follow-the-watch time;
 date as words (`Nov 9`) or numbers (`11/9`, `9.11.`, `11-9`), month or day first, weekday on
-or off; white on black or inverted. The page is built in `src/pkjs/index.js` (`configPage`),
+or off; white on black or inverted; temperature in Fahrenheit or Celsius (phone side only, no
+watch key). The page is built in `src/pkjs/index.js` (`configPage`),
 stored in the phone's `localStorage`, and sent to the watch over `AppMessage` (keys
 `TIME_FORMAT`, `DATE_STYLE`, `DATE_DAY_FIRST`, `DATE_SEPARATOR`, `SHOW_WEEKDAY`, `INVERT`),
 where it is persisted and the layout is rebuilt. Event times arrive as 24-hour text and the

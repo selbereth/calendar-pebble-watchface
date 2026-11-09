@@ -97,8 +97,9 @@ function subscribe() {
 //   separator:  0 = "/", 1 = "." (written "9.11."), 2 = "-"; numbers only
 //   weekday:    1 = show the weekday, 0 = hide it
 //   invert:     0 = white on black, 1 = black on white
+//   tempUnit:   0 = Fahrenheit, 1 = Celsius (phone side only: the weather text is built here)
 var DEFAULT_SETTINGS = { timeFormat: 0, dateStyle: 0, dayFirst: 0, separator: 0, weekday: 1,
-  invert: 0 };
+  invert: 0, tempUnit: 0 };
 
 function loadSettings() {
   var saved = {};
@@ -166,12 +167,14 @@ function configPage(settings) {
     opts('weekday', [[1, 'Show the weekday'], [0, 'Hide the weekday']]) +
     '<h2>Colours</h2>' +
     opts('invert', [[0, 'White on black'], [1, 'Black on white (inverted)']]) +
+    '<h2>Temperature</h2>' +
+    opts('tempUnit', [[0, 'Fahrenheit (°F)'], [1, 'Celsius (°C)']]) +
     '<button type="submit">Save</button></form>' +
     '<p><small>Events come from the calendars synced in the Pebble app’s Calendar ' +
     'screen.</small></p>' +
     '<script>document.getElementById("f").addEventListener("submit",function(e){' +
     'e.preventDefault();var o={};["timeFormat","dateStyle","dayFirst","separator","weekday",' +
-    '"invert"].forEach(function(n){o[n]=parseInt(document.querySelector(' +
+    '"invert","tempUnit"].forEach(function(n){o[n]=parseInt(document.querySelector(' +
     '"input[name="+n+"]:checked").value,10)});' +
     'document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify(o))});</script>' +
     '</body></html>';
@@ -196,14 +199,13 @@ Pebble.addEventListener('webviewclosed', function (e) {
     }
     saveSettings(settings);
     sendSettings(settings);
+    updateWeather();  // the unit may have changed
   } catch (err) {
     console.log('Calendar: bad settings response: ' + err);
   }
 });
 
 // Weather + sunrise/sunset from Open-Meteo (no API key), using the phone's location.
-// Units are Fahrenheit; change TEMP_UNIT to 'celsius' for Celsius.
-var TEMP_UNIT = 'fahrenheit';
 var WEATHER_REFRESH_MS = 30 * 60 * 1000;
 
 function clockPart(isoLocal) {
@@ -229,7 +231,8 @@ function fetchWeather(pos) {
     '?latitude=' + pos.coords.latitude + '&longitude=' + pos.coords.longitude +
     '&current=temperature_2m' +
     '&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset' +
-    '&temperature_unit=' + TEMP_UNIT + '&timezone=auto&forecast_days=1';
+    '&temperature_unit=' + (loadSettings().tempUnit === 1 ? 'celsius' : 'fahrenheit') +
+    '&timezone=auto&forecast_days=1';
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
     try {
