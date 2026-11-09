@@ -145,7 +145,7 @@ than claiming a build was verified.
 - Keep `messageKeys` in `package.json` in sync with the `dict['EVENT_..._TITLE'/'_TIME']`
   keys sent from `src/pkjs/index.js` and the keys read in `src/c/calendar-face.c`.
 - The plugin API used in `index.js` (`Pebble.subscribeToSource`,
-  category `calendar`/item `event`) is experimental (mobile app v1.14.0+,
-  requires enabling "Use experimental plugins" in the Pebble app's debug
+  category `calendar`/item `event`) used to be experimental (mobile app v1.14.0+,
+  needed "Use experimental plugins" in the Pebble app's debug
   settings). Don't assume it behaves like a stable, documented API.
 - This targets sideloading/personal use, not an app store submission.

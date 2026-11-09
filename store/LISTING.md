@@ -36,25 +36,16 @@ inverted black-on-white look, the time format and the date format are all in the
 after a reboot. Square screens use a compact header; round screens stack the clock above the
 info lines.
 
-## Setup (required)
+## Setup
 
-Calendar reads events through the Pebble mobile app's **experimental plugin
-API** (app v1.14.0 or newer), which is off by default:
-
-1. In the Pebble app: **Settings > Debug > Show debug options**, then turn on
-   **Use experimental plugins**.
-2. Make sure your calendars are synced and enabled in the app's **Calendar**
-   screen.
-
-Without this the watch shows "No upcoming events". The plugin API is
-experimental and may change in a future app release.
+Calendar reads events from the calendars synced in the Pebble mobile app. Make sure your
+calendars are synced and enabled in the app's **Calendar** screen, and allow the Calendar
+permission when asked. Without a synced calendar the watch shows "No upcoming events".
 
 ## Notes for the reviewer
 
-The calendar data comes from the Pebble mobile app's experimental plugin API, which the
-platform docs say is not ready for the store and may change. Without "Use experimental
-plugins" turned on, the face shows "No upcoming events". Say so in the reviewer-notes
-field.
+The calendar data comes from the Pebble mobile app's own calendar sync (Calendar permission).
+No debug or experimental setting is needed.
 
 ## Publishing
 

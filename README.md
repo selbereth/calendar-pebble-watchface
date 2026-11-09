@@ -27,18 +27,10 @@ watch re-writes them for the 12-hour setting.
 
 ## Setup
 
-This relies on the mobile app's **experimental plugin API** (v1.14.0+),
-which is off by default:
-
-1. In the Pebble app: **Settings → Debug → Show debug options**, then enable
-   **Use experimental plugins**.
-2. Make sure your calendars are synced and enabled in the Pebble app's
+1. Make sure your calendars are synced and enabled in the Pebble app's
    **Calendar** screen.
-3. Install this watchface. It should pick up your upcoming events
-   automatically.
-
-The plugin API is experimental and may change; the store listing says so
-(see `store/LISTING.md`).
+2. Install this watchface and allow the Calendar permission. It should pick up your upcoming
+   events automatically. No debug setting is needed.
 
 ## Building
 

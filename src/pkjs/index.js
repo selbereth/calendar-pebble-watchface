@@ -1,10 +1,7 @@
 // Reads the next 11 upcoming events from the Pebble app's built-in Calendar plugin
 // (calendar/event) and pushes them to the watch. This is the phone's own calendar
 // sync (whatever calendars are enabled in the Pebble app's Calendar screen) --
-// no ICS URL or companion app needed.
-//
-// Requires the mobile app's experimental plugin API (v1.14.0+): Settings > Debug >
-// Show debug options > "Use experimental plugins".
+// no ICS URL or companion app needed. Needs the Calendar permission; no debug setting.
 
 var MAX_EVENTS = 11;
 var subscription = null;
@@ -170,9 +167,8 @@ function configPage(settings) {
     '<h2>Colours</h2>' +
     opts('invert', [[0, 'White on black'], [1, 'Black on white (inverted)']]) +
     '<button type="submit">Save</button></form>' +
-    '<p><small>Events come from the Pebble app’s own calendar sync. In the Pebble app: ' +
-    'Settings &rarr; Debug &rarr; Show debug options, then enable <b>Use experimental ' +
-    'plugins</b>.</small></p>' +
+    '<p><small>Events come from the calendars synced in the Pebble app’s Calendar ' +
+    'screen.</small></p>' +
     '<script>document.getElementById("f").addEventListener("submit",function(e){' +
     'e.preventDefault();var o={};["timeFormat","dateStyle","dayFirst","separator","weekday",' +
     '"invert"].forEach(function(n){o[n]=parseInt(document.querySelector(' +
